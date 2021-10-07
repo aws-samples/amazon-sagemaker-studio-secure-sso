@@ -1,0 +1,10 @@
+{
+    "name": "SAMLBackEnd",
+    "version": "1.0.0",
+    "dependencies": {
+        "express": "^4.17.1",
+        "saml-encoder-decoder-js": "^1.0.1",
+        "saml2js": "^0.1.2",
+        "xml2js": "^0.4.23"
+    }
+}
