@@ -330,6 +330,9 @@ Resources:
     Properties:
       AllocationId: !GetAtt NatGatewayEIP.AllocationId
       SubnetId: !Ref PublicSubnetVPCSageMaker
+      Tags:
+        - Key: EnvironmentName
+          Value: !Ref EnvironmentName        
 
   NatGatewayEIP:
     Type: AWS::EC2::EIP
@@ -367,7 +370,7 @@ Resources:
       VpcId: !Ref VPCSageMaker
       Tags:
         - Key: EnvironmentName
-          Value: !Sub ${EnvironmentName} Private Route
+          Value: !Sub ${EnvironmentName} Private Routes
   
   DefaultPrivateRoute:
     Type: AWS::EC2::Route
@@ -395,6 +398,7 @@ Resources:
       VpcEndpointType: Interface
       SecurityGroupIds:
         - !Ref SecurityGroupAPIGateway
+        
 
   SageMakerStudioVpcEndpoint:
     Type: AWS::EC2::VPCEndpoint
@@ -481,7 +485,10 @@ Resources:
                   - 'ec2:DescribeSubnets'
                   - 'ec2:DescribeVpcs'
                 Resource: !Sub '*'  
-                    
+      Tags:
+        - Key: EnvironmentName
+          Value: !Ref EnvironmentName
+
   SageMakerExecutionRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -510,6 +517,9 @@ Resources:
       Path: /service-role/
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess    
+      Tags:
+        - Key: EnvironmentName
+          Value: !Ref EnvironmentName        
 
 ######## API Gateway ########
 
@@ -521,11 +531,13 @@ Resources:
         Type: Private
         VpcEndpointIds: 
           - !Ref APIGatewayVpcEndpoint
+          
 
 ######## Lambda Function ########
   SAMLBackEndFunction:
     Type: AWS::Serverless::Function 
     Properties:
+    
       CodeUri: saml-backend/
       Role: !GetAtt SAMLBackEndLambdaRole.Arn
       Handler: index.handler
