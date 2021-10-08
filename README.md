@@ -22,7 +22,13 @@ The template also deploys 3 EC2 instances for demonstrating the solution.
 
 - 1 EC2 Linux in the public subnet acting as Bastion host - IP Available as the **SageMakerBastionHost** Key SAM Output
 - 1 EC2 Windows in a private subnet that is able to access SageMaker - IP Available as the **SageMakerWindowsHost** Key SAM Output 
-- 1 EC2 Windows in a public subnet to demonstrate that SageMaker Studio can't be accessed - IP Available as the **SageMakerWindowsBastionHost** Key SAM Output 
+- 1 EC2 Windows in a public subnet to demonstrate that SageMaker Studio can't be accessed - IP Available as the **SageMakerWindowsBastionHost** Key SAM Output
+
+Note that the password for the Windows EC2 instances is provided in the output under the **SageMakerWindowsPassword** key value. To change it, run the following command in a Windows Command prompt at the first login
+
+```sh
+net user Administrator "NewPassword"
+```
 
 In order to prevent access to SageMaker Studio for users within the console we recommend to implement the following [Service Control Policy](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html)
 
