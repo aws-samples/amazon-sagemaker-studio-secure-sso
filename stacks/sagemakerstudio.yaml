@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sagemaker-stack
+
+Parameters: 
+  SageMakerDomainName: 
+    Type: String
+  PrivateSubnetVPCSageMakerStudio: 
+    Type: String
+  SecurityGroupSageMakerStudio: 
+    Type: String
+  VPCSageMaker: 
+    Type: String
+  EnvironmentName: 
+    Type: String
+  UserProfileName: 
+    Type: String
+  DeleteSageMakerEFSLambda: 
+    Type: String    
+  DataScienceImage: 
+    Type: String
+
+Resources:
+
+  SageMakerExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: SageMakerExecutionRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - sagemaker.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: SageMakerExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                  - 's3:DeleteObject'
+                  - 's3:ListBucket'
+                Resource: 'arn:aws:s3:::*'
+      Path: /service-role/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess    
+      Tags:
+        - Key: EnvironmentName
+          Value: !Ref EnvironmentName        
+
+  SageMakerStudioDomain:
+    Type: AWS::SageMaker::Domain
+    Properties:
+      AppNetworkAccessType: VpcOnly
+      AuthMode: IAM
+      DomainName: !Ref SageMakerDomainName
+      SubnetIds:
+        - !Ref PrivateSubnetVPCSageMakerStudio
+      DefaultUserSettings:
+          ExecutionRole: !GetAtt SageMakerExecutionRole.Arn
+          SecurityGroups:
+            - !Ref SecurityGroupSageMakerStudio
+      VpcId: !Ref VPCSageMaker
+      Tags:
+        - Key: EnvironmentName
+          Value: !Ref EnvironmentName
+
+  SageMakerStudioUserProfile:
+    Type: AWS::SageMaker::UserProfile
+    Properties: 
+      DomainId: !GetAtt SageMakerStudioDomain.DomainId
+      Tags: 
+        - Key: EnvironmentName
+          Value: !Ref EnvironmentName
+      UserProfileName: !Ref UserProfileName
+
+  JupyterApp:
+    Type: AWS::SageMaker::App
+    DependsOn: SageMakerStudioUserProfile
+    Properties: 
+      AppName: default
+      AppType: JupyterServer
+      DomainId: !GetAtt SageMakerStudioDomain.DomainId
+      UserProfileName: !Ref UserProfileName
+      Tags: 
+        - Key: EnvironmentName
+          Value: !Ref EnvironmentName
+  
+  DataScienceApp:
+
+    Type: AWS::SageMaker::App
+    DependsOn: SageMakerStudioUserProfile
+    Properties: 
+      AppName: instance-event-engine-datascience-ml-t3-medium
+      AppType: KernelGateway
+      DomainId: !GetAtt SageMakerStudioDomain.DomainId
+      ResourceSpec: 
+        InstanceType:  ml.t3.medium
+        SageMakerImageArn: !Ref DataScienceImage
+      UserProfileName: !Ref UserProfileName
+      Tags: 
+        - Key: EnvironmentName
+          Value: !Ref EnvironmentName        
+
+Outputs:
+  SageMakerStudioDomainId:
+    Description: "SageMaker Studio domain created"
+    Value: !GetAtt SageMakerStudioDomain.DomainId
+  SageMakerStudioLogicId:
+    Description: "SageMaker Studio logical resource id"
+    Value: SageMakerStudioDomain

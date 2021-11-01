@@ -132,3 +132,5 @@ samconfig.toml
 events/event.json
 .aws-sam/
 README copy.md
+functions/clean-up-efs_test.py
+.vscode/

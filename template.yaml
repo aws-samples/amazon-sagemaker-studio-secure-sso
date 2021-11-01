@@ -7,6 +7,7 @@ Parameters:
   EnvironmentName:
     Type: String
     Default: SageMakerSecureSSO
+    AllowedPattern: '[a-zA-Z0-9]+'
   NetworkVpcCidr:
     Type: String
     Default: 10.100.0.0/16
@@ -15,25 +16,41 @@ Parameters:
     Type: String
     Default: 10.100.10.0/24
     AllowedPattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}($|\/(8|16|24|32))$
+  NetworkPrivateSubnetSageMakerCidr:
+    Type: String
+    Default: 10.100.30.0/24
+    AllowedPattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}($|\/(8|16|24|32))$  
   NetworkPublicSubnetCidr:
     Type: String
-    Default: 10.100.20.0/24    
+    Default: 10.100.20.0/24
     AllowedPattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}($|\/(8|16|24|32))$
   SageMakerDomainName:
     Type: String
     Default: SageMakerSecure
+    AllowedPattern: '[a-zA-Z0-9]+'
   UserProfileName:
     Type: String
-  KeyPairName:
+    AllowedPattern: ^[{]?[0-9a-fA-F]{10}-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}
+  KeyPairName: 
     Type: String
+    AllowedPattern: '[a-zA-Z0-9\-\_]+'
   PublicIp:
     Type: String
     AllowedPattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}($|\/(8|16|24|32))$
 Mappings: 
   RegionMap: 
     eu-west-1: 
-      "LinuxAMI": "ami-0d1bf5b68307103c2"
-      "WinAMI": "ami-0acec5a529be6b35a"
+      LinuxAMI: "ami-0d1bf5b68307103c2"
+      WinAMI: "ami-0acec5a529be6b35a"     
+      datascience: "arn:aws:sagemaker:eu-west-1:470317259841:image/datascience-1.0"
+      datawrangler: "arn:aws:sagemaker:eu-west-1:245179582081:image/sagemaker-data-wrangler-1.0"
+
+    eu-central-1: 
+      LinuxAMI: "ami-058e6df85cfc7760b"
+      WinAMI: "ami-0a1895726297e0e10"      
+      datascience: "arn:aws:sagemaker:eu-central-1:936697816551:image/datascience-1.0"
+      datawrangler: "arn:aws:sagemaker:eu-central-1:024640144536:image/sagemaker-data-wrangler-1.0"
+
 Globals:
   Function:
     Timeout: 10
@@ -82,7 +99,7 @@ Resources:
       VpcId: !Ref VPCSageMaker
       Tags:
       - Key: Name
-        Value: SageMakerStudio
+        Value: VPCeAPIGateway
       - Key: EnvironmentName
         Value: !Ref EnvironmentName  
       GroupDescription: !Sub Allow inbound from ${NetworkVpcCidr} on 443    
@@ -297,7 +314,17 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: EnvironmentName
-          Value: !Sub ${EnvironmentName} Private Subnet          
+          Value: !Sub ${EnvironmentName} Private Subnet  
+
+  PrivateSubnetVPCSageMakerStudio:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPCSageMaker
+      CidrBlock: !Ref NetworkPrivateSubnetSageMakerCidr
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: EnvironmentName
+          Value: !Sub ${EnvironmentName} Private Subnet SageMaker            
 
   PublicSubnetVPCSageMaker:
     Type: AWS::EC2::Subnet
@@ -309,7 +336,7 @@ Resources:
         - Key: EnvironmentName
           Value: !Sub ${EnvironmentName} Public Subnet 
 
-######## NATW/IGW ########
+######## NAT Gateways/ IGW Gateway ########
 
 
   InternetGateway:
@@ -399,7 +426,6 @@ Resources:
       SecurityGroupIds:
         - !Ref SecurityGroupAPIGateway
         
-
   SageMakerStudioVpcEndpoint:
     Type: AWS::EC2::VPCEndpoint
     DependsOn: SAMLBackEndFunction
@@ -446,6 +472,7 @@ Resources:
     Properties:
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy'
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -489,37 +516,70 @@ Resources:
         - Key: EnvironmentName
           Value: !Ref EnvironmentName
 
-  SageMakerExecutionRole:
-    Type: "AWS::IAM::Role"
+  DeleteEFSLambdaRole:
+    Type: AWS::IAM::Role
     Properties:
-      RoleName: SageMakerExecutionRole
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy'
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
+        Version: '2012-10-17'
         Statement:
-          - Effect: Allow
+          -
+            Effect: Allow
             Principal:
               Service:
-                - sagemaker.amazonaws.com
+                - 'lambda.amazonaws.com'
             Action:
-              - "sts:AssumeRole"
+              - 'sts:AssumeRole'
       Policies:
-        - PolicyName: SageMakerExecutionPolicy
+        - PolicyName: CloudFormation
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
-                  - 's3:GetObject'
-                  - 's3:PutObject'
-                  - 's3:DeleteObject'
-                  - 's3:ListBucket'
-                Resource: 'arn:aws:s3:::*'
-      Path: /service-role/
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess    
+                  - 'cloudformation:DescribeStackResource'                               
+                Resource: !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*'      
+        - PolicyName: EC2
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ec2:RevokeSecurityGroupIngress'
+                  - 'ec2:RevokeSecurityGroupEgress'
+                  - 'ec2:DeleteSecurityGroup'
+                  - 'ec2:DeleteSubnet'
+                  - 'ec2:DeleteVpc'                                 
+                Resource: 
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*'
+                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*'          
+        - PolicyName: EFSCapabilities
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'elasticfilesystem:DescribeMountTargets'
+                  - 'elasticfilesystem:DescribeFileSystems'
+                  - 'elasticfilesystem:DeleteMountTarget'
+                  - 'elasticfilesystem:DeleteFileSystem'
+                Resource: 
+                  - !Sub 'arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:access-point/*'
+                  - !Sub 'arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/*'                  
+        - PolicyName: DescribeSecurityGroups
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'ec2:DescribeSecurityGroups'                               
+                Resource: '*'                  
       Tags:
         - Key: EnvironmentName
-          Value: !Ref EnvironmentName        
+          Value: !Ref EnvironmentName
 
 ######## API Gateway ########
 
@@ -531,13 +591,12 @@ Resources:
         Type: Private
         VpcEndpointIds: 
           - !Ref APIGatewayVpcEndpoint
-          
-
+       
 ######## Lambda Function ########
+
   SAMLBackEndFunction:
     Type: AWS::Serverless::Function 
     Properties:
-    
       CodeUri: saml-backend/
       Role: !GetAtt SAMLBackEndLambdaRole.Arn
       Handler: index.handler
@@ -559,47 +618,49 @@ Resources:
         SubnetIds:
           - !Ref PrivateSubnetVPCSageMaker
   
-######## SageMaker Studio ########
+  DeleteSageMakerEFS:
+      Type: AWS::Serverless::Function
+      Properties:
+        Timeout: 900
+        Role: !GetAtt DeleteEFSLambdaRole.Arn
+        CodeUri: functions/
+        Handler: clean-up-efs.lambda_handler
+        Runtime: python3.8
 
-  SageMakerStudioDomain:
-    Type: AWS::SageMaker::Domain
-    DependsOn: SAMLBackEndFunction
+######## Lambda Function ########
+
+  DeleteEFSSageMaker:
+    Type: Custom::DeleteEFSSageMaker
+    DependsOn: SakeMakerStack
     Properties:
-      AppNetworkAccessType: VpcOnly
-      AuthMode: IAM
-      DomainName: !Ref SageMakerDomainName
-      SubnetIds:
-        - !Ref PrivateSubnetVPCSageMaker
-      DefaultUserSettings:
-          ExecutionRole: !GetAtt SageMakerExecutionRole.Arn
-          SecurityGroups:
-            - !Ref SecurityGroupSageMakerStudio
-      VpcId: !Ref VPCSageMaker
-      Tags:
-        - Key: EnvironmentName
-          Value: !Ref EnvironmentName
+      ServiceToken: !GetAtt DeleteSageMakerEFS.Arn
+      DomainId: !GetAtt SakeMakerStack.Outputs.SageMakerStudioDomainId
+      vpcId: !Ref VPCSageMaker
 
-  SageMakerStudioUserProfile:
-    Type: AWS::SageMaker::UserProfile
+######## Custom Resource ########
+
+######## SgaeMaker Studio Stack ########
+
+  SakeMakerStack:
+    Type: AWS::CloudFormation::Stack
     Properties: 
-      DomainId: !GetAtt SageMakerStudioDomain.DomainId
+      Parameters: 
+        SageMakerDomainName : !Ref SageMakerDomainName
+        PrivateSubnetVPCSageMakerStudio : !Ref PrivateSubnetVPCSageMakerStudio
+        SecurityGroupSageMakerStudio : !Ref SecurityGroupSageMakerStudio
+        VPCSageMaker : !Ref VPCSageMaker
+        EnvironmentName : !Ref EnvironmentName
+        UserProfileName : !Ref UserProfileName
+        DeleteSageMakerEFSLambda: !GetAtt DeleteSageMakerEFS.Arn
+        DataScienceImage : !FindInMap
+          - RegionMap
+          - !Ref 'AWS::Region'
+          - datascience       
       Tags: 
         - Key: EnvironmentName
           Value: !Ref EnvironmentName
-      UserProfileName: !Ref UserProfileName
-
-  SageMakerStudioApp:
-    Type: AWS::SageMaker::App
-    DependsOn: SageMakerStudioUserProfile
-    Properties: 
-      AppName: 'default'
-      AppType: JupyterServer
-      DomainId: !GetAtt SageMakerStudioDomain.DomainId
-      UserProfileName: !Ref UserProfileName
-      Tags: 
-        - Key: EnvironmentName
-          Value: !Ref EnvironmentName
-      
+      TemplateURL: stacks/sagemakerstudio.yaml
+      TimeoutInMinutes: 15
 
 Outputs:
 
@@ -608,16 +669,10 @@ Outputs:
     Value: !Sub "https://${SageMakerStudioSSOAPI}.execute-api.${AWS::Region}.amazonaws.com/prod/saml"
   SageMakerStudioDomainId:
     Description: "SageMaker Studio domain created"
-    Value: !GetAtt SageMakerStudioDomain.DomainId
-  SageMakerBastionHost:
-    Description: "Public IP Address to access Bastion Host"
-    Value: !GetAtt Ec2InstanceBastion.PublicIp
+    Value: !GetAtt SakeMakerStack.Outputs.SageMakerStudioDomainId
   SageMakerWindowsBastionHost:
     Description: "Public IP Address to access Windows Bastion Host"
     Value: !GetAtt Ec2InstanceWindowsPublic.PublicIp    
-  SageMakerWindowsHost:
-    Description: "Private IP Address to access Windows Host"
-    Value: !GetAtt Ec2InstanceWindows.PrivateIp 
   SageMakerWindowsPassword:
     Description: "Default password to loging to the EC2 Windows instances"
     Value: !Sub ${EnvironmentName}${NetworkVpcCidr}
@@ -632,3 +687,4 @@ Outputs:
               - !GetAtt Ec2InstanceWindows.PrivateIp
               - ':3389 ec2-user@'
               - !GetAtt Ec2InstanceBastion.PublicIp
+

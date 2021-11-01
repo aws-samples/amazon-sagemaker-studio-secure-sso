@@ -1,6 +1,9 @@
 # amazon-sagemaker-studio-secure-sso
 
-This solution provides a way to deploy SageMaker Studio in a private and secure environment. The solution integrates with a [Custom SAML 2.0 Application](https://docs.aws.amazon.com/singlesignon/latest/userguide/samlapps.html) as a mechanism to trigger the authentication to SageMaker Studio. The Custom SAML application needs to be configured with the API Gateway endpoint URL as its ACS and needs mapping attributes containing the AWS SSO User ID as well as the SageMaker Domain Domain ID. The workflow of deployment is as followed:
+This solution provides a way to deploy SageMaker Studio in a private and secure environment. The solution integrates with a [Custom SAML 2.0 Application](https://docs.aws.amazon.com/singlesignon/latest/userguide/samlapps.html) as a mechanism to trigger the authentication to SageMaker Studio. The Custom SAML application needs to be configured with the API Gateway endpoint URL as its ACS and needs mapping attributes containing the AWS SSO User ID as well as the SageMaker Domain Domain ID. 
+The deployment procedure assumes that [AWS Single Sign On](https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html) has been enabled and configured for the [AWS Organization](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_introduction.html) the solution will deployed in.
+
+The workflow of deployment is as followed:
 
 - Retrieve the AWS SSO User ID - can be done through the console or using the following command
 ```sh
@@ -17,6 +20,8 @@ sam build && sam deploy --capabilities CAPABILITY_NAMED_IAM --guided
 - Set the Subject to **email** and format **emailAddress**
 - Add a new attribute named **domain-id** and set the value to the Key SAM Output **SageMakerStudioDomainId**
 - Add a new attribute named **username** and set the value to **${user:AD_GUID}**
+
+![image info](./img/SSO_App_Config.png)
 
 The template also deploys 3 EC2 instances for demonstrating the solution. 
 
