@@ -1,0 +1,334 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Create IAM Roles for SageMaker Studio and Lambda SAML function
+
+Parameters: 
+  EnvironmentName:
+    Type: String
+  NetworkVpc:
+    Type: String
+  NetworkPrivateSubnet:
+    Type: String  
+  NetworkPrivateSubnetSageMaker:
+    Type: String 
+  NetworkPublicSubnet:
+    Type: String
+  PublicIp:
+    Type: String
+    
+
+Resources:
+
+#-####### SG SageMaker ########
+
+  SecurityGroupSageMakerStudio:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPCSageMaker
+      Tags:
+      - Key: Name
+        Value: SageMakerStudio
+      - Key: EnvironmentName
+        Value: !Ref EnvironmentName  
+      GroupDescription: !Sub Allow All outbout and inbound from ${NetworkVpc}
+
+  OutboundRuleSecurityGroupSageMakerStudio:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      IpProtocol: "-1"
+      FromPort: 0
+      ToPort: 65535
+      CidrIp: 0.0.0.0/0
+      GroupId: !Ref SecurityGroupSageMakerStudio
+
+  InboundRuleSecurityGroupSageMakerStudio:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: "-1"
+      FromPort: 0
+      ToPort: 65535
+      CidrIp: !Ref NetworkVpc
+      GroupId: !Ref SecurityGroupSageMakerStudio       
+
+#-####### SG VPCe API Gateway ########
+
+  SecurityGroupAPIGateway:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPCSageMaker
+      Tags:
+      - Key: Name
+        Value: VPCeAPIGateway
+      - Key: EnvironmentName
+        Value: !Ref EnvironmentName  
+      GroupDescription: !Sub Allow inbound from ${NetworkVpc} on 443    
+
+  InboundRuleSecurityGroupAPIGateway443:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: "tcp"
+      FromPort: 443
+      ToPort: 443
+      CidrIp: !Ref NetworkVpc
+      GroupId: !Ref SecurityGroupAPIGateway
+
+#-####### SG EC2 Bastion (Public) ########
+
+  SecurityGroupBastion:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPCSageMaker
+      Tags:
+      - Key: Name
+        Value: BastionConnection
+      - Key: EnvironmentName
+        Value: !Ref EnvironmentName  
+      GroupDescription: !Sub Allow All outbout and inbound from ${NetworkVpc}  
+
+  InboundRuleSecurityGroupBastion22:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: "tcp"
+      FromPort: 22
+      ToPort: 22
+      CidrIp: !Ref PublicIp
+      GroupId: !Ref SecurityGroupBastion      
+
+  InboundRuleSecurityGroupBastion3389:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: "tcp"
+      FromPort: 3389
+      ToPort: 3389
+      CidrIp: !Ref PublicIp
+      GroupId: !Ref SecurityGroupBastion   
+
+  OutboundRuleSecurityGroupBastion:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      IpProtocol: "-1"
+      FromPort: 0
+      ToPort: 65535
+      CidrIp: 0.0.0.0/0
+      GroupId: !Ref SecurityGroupSageMakerStudio
+
+#-####### SG EC2 Windows (Private) ########
+
+  SecurityGroupWindows:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPCSageMaker
+      Tags:
+      - Key: Name
+        Value: RDPConnection
+      - Key: EnvironmentName
+        Value: !Ref EnvironmentName  
+      GroupDescription: !Sub Allow All outbout and inbound from ${NetworkVpc}  
+
+  InboundRuleSecurityGroupWindows3389:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      IpProtocol: "tcp"
+      FromPort: 3389
+      ToPort: 3389
+      SourceSecurityGroupId: !Ref SecurityGroupBastion
+      GroupId: !Ref SecurityGroupWindows      
+
+  OutboundRuleSecurityGroupWindows:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      IpProtocol: "-1"
+      FromPort: 0
+      ToPort: 65535
+      CidrIp: 0.0.0.0/0
+      GroupId: !Ref SecurityGroupWindows
+
+######## VPC / Subnets ########
+
+  VPCSageMaker:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: !Ref NetworkVpc
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: EnvironmentName
+          Value: !Ref EnvironmentName
+  
+  PrivateSubnetVPCSageMaker:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPCSageMaker
+      CidrBlock: !Ref NetworkPrivateSubnet
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: EnvironmentName
+          Value: !Sub ${EnvironmentName} Private Subnet  
+
+  PrivateSubnetVPCSageMakerStudio:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPCSageMaker
+      CidrBlock: !Ref NetworkPrivateSubnetSageMaker
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: EnvironmentName
+          Value: !Sub ${EnvironmentName} Private Subnet SageMaker            
+
+  PublicSubnetVPCSageMaker:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPCSageMaker
+      CidrBlock: !Ref NetworkPublicSubnet
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: EnvironmentName
+          Value: !Sub ${EnvironmentName} Public Subnet 
+
+######## NAT Gateways/ IGW Gateway ########
+
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: EnvironmentName
+          Value: !Ref EnvironmentName
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPCSageMaker
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGatewayEIP.AllocationId
+      SubnetId: !Ref PublicSubnetVPCSageMaker
+      Tags:
+        - Key: EnvironmentName
+          Value: !Ref EnvironmentName        
+
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc 
+
+######## Route Tables ########
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPCSageMaker
+      Tags:
+        - Key: EnvironmentName
+          Value: !Sub ${EnvironmentName} Public Routes
+
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetVPCSageMakerRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnetVPCSageMaker
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPCSageMaker
+      Tags:
+        - Key: EnvironmentName
+          Value: !Sub ${EnvironmentName} Private Routes
+  
+  DefaultPrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnetVPCSageMakerRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnetVPCSageMaker
+
+######## VPC Endpoints ########
+
+  APIGatewayVpcEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.execute-api"
+      PrivateDnsEnabled: true
+      VpcId: !Ref VPCSageMaker
+      SubnetIds:
+        - !Ref PrivateSubnetVPCSageMaker
+      VpcEndpointType: Interface
+      SecurityGroupIds:
+        - !Ref SecurityGroupAPIGateway
+        
+  SageMakerStudioVpcEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    #DependsOn: SAMLBackEndFunction
+    Properties:
+      PrivateDnsEnabled: true
+      ServiceName: !Sub "aws.sagemaker.${AWS::Region}.studio"
+      VpcId: !Ref VPCSageMaker
+      SubnetIds:
+        - !Ref PrivateSubnetVPCSageMaker
+      VpcEndpointType: Interface
+      SecurityGroupIds:
+        - !Ref SecurityGroupAPIGateway
+
+  SageMakerAPIVpcEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    #DependsOn: SAMLBackEndFunction
+    Properties:
+      PrivateDnsEnabled: true
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.sagemaker.api"
+      VpcId: !Ref VPCSageMaker
+      SubnetIds:
+        - !Ref PrivateSubnetVPCSageMaker
+      VpcEndpointType: Interface
+      SecurityGroupIds:
+        - !Ref SecurityGroupAPIGateway
+
+  SageMakerRuntimeVpcEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    #DependsOn: SAMLBackEndFunction
+    Properties:
+      PrivateDnsEnabled: true
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.sagemaker.runtime"
+      VpcId: !Ref VPCSageMaker
+      SubnetIds:
+        - !Ref PrivateSubnetVPCSageMaker
+      VpcEndpointType: Interface
+      SecurityGroupIds:
+        - !Ref SecurityGroupAPIGateway   
+
+Outputs:
+  VPCSageMaker:
+    Value: !Ref VPCSageMaker
+  PublicSubnetVPCSageMaker:
+    Value: !Ref PublicSubnetVPCSageMaker   
+  PrivateSubnetVPCSageMakerStudio:
+    Value: !Ref PrivateSubnetVPCSageMakerStudio
+  PrivateSubnetVPCSageMaker:
+    Value: !Ref PrivateSubnetVPCSageMaker
+  SecurityGroupBastion:
+    Value: !GetAtt SecurityGroupBastion.GroupId
+  APIGatewayVpcEndpoint:
+    Value: !Ref APIGatewayVpcEndpoint  
+  SecurityGroupAPIGateway:
+    Value: !GetAtt SecurityGroupAPIGateway.GroupId
+  SecurityGroupSageMakerStudio:
+    Value: !GetAtt SecurityGroupSageMakerStudio.GroupId
+  SecurityGroupWindows:
+    Value: !GetAtt SecurityGroupWindows.GroupId  

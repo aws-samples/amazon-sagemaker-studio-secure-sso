@@ -3,8 +3,11 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   sagemaker-stack
 
-Parameters: 
-  SageMakerDomainName: 
+Parameters:
+  
+  SageMakerExecutionRoleArn:
+    Type: String
+  SageMakerDomainName:
     Type: String
   PrivateSubnetVPCSageMakerStudio: 
     Type: String
@@ -16,44 +19,12 @@ Parameters:
     Type: String
   UserProfileName: 
     Type: String
-  DeleteSageMakerEFSLambda: 
-    Type: String    
-  DataScienceImage: 
+  DataScienceImage:
     Type: String
+  DeleteSageMakerEFSArn:
+    Type: String  
 
 Resources:
-
-  SageMakerExecutionRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: SageMakerExecutionRole
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - sagemaker.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      Policies:
-        - PolicyName: SageMakerExecutionPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 's3:GetObject'
-                  - 's3:PutObject'
-                  - 's3:DeleteObject'
-                  - 's3:ListBucket'
-                Resource: 'arn:aws:s3:::*'
-      Path: /service-role/
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess    
-      Tags:
-        - Key: EnvironmentName
-          Value: !Ref EnvironmentName        
 
   SageMakerStudioDomain:
     Type: AWS::SageMaker::Domain
@@ -64,7 +35,7 @@ Resources:
       SubnetIds:
         - !Ref PrivateSubnetVPCSageMakerStudio
       DefaultUserSettings:
-          ExecutionRole: !GetAtt SageMakerExecutionRole.Arn
+          ExecutionRole: !Ref SageMakerExecutionRoleArn
           SecurityGroups:
             - !Ref SecurityGroupSageMakerStudio
       VpcId: !Ref VPCSageMaker
@@ -94,7 +65,6 @@ Resources:
           Value: !Ref EnvironmentName
   
   DataScienceApp:
-
     Type: AWS::SageMaker::App
     DependsOn: SageMakerStudioUserProfile
     Properties: 
@@ -109,10 +79,14 @@ Resources:
         - Key: EnvironmentName
           Value: !Ref EnvironmentName        
 
+  DeleteEFSSageMaker:
+    Type: Custom::DeleteEFSSageMaker
+    Properties:
+      ServiceToken: !Ref DeleteSageMakerEFSArn
+      DomainId: !GetAtt SageMakerStudioDomain.DomainId
+      vpcId: !Ref VPCSageMaker
+
 Outputs:
   SageMakerStudioDomainId:
     Description: "SageMaker Studio domain created"
     Value: !GetAtt SageMakerStudioDomain.DomainId
-  SageMakerStudioLogicId:
-    Description: "SageMaker Studio logical resource id"
-    Value: SageMakerStudioDomain

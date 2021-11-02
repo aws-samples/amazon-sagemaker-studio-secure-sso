@@ -134,3 +134,4 @@ events/event.json
 README copy.md
 functions/clean-up-efs_test.py
 .vscode/
+events/

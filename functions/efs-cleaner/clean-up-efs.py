@@ -1,4 +1,3 @@
-import json
 import boto3
 import cfnresponse
 import time
@@ -9,7 +8,7 @@ cfn = boto3.client("cloudformation")
 ec2 = boto3.client("ec2")
 
 
-def delete_efs(sm_domain_id, vpc_id):
+def delete_efs(sm_domain_id):
     subnets = []
 
     # Get EFS which belongs to SageMaker (based on a tag)
@@ -22,19 +21,17 @@ def delete_efs(sm_domain_id, vpc_id):
         print(f"Delete mount targets for EFS file system id: {id}")
         for mt in efs.describe_mount_targets(FileSystemId=id)["MountTargets"]:
             efs.delete_mount_target(MountTargetId=mt["MountTargetId"])
+            vpc_id = mt['VpcId']
             subnets.append(mt["SubnetId"])
         
         while len(efs.describe_mount_targets(FileSystemId=id)["MountTargets"]) > 0:
             print("Wait until mount targets have been deleted")
             time.sleep(5)
 
-        filters = [{"Name":"vpc-id","Values":[vpc_id]},{"Name":"tag:ManagedByAmazonSageMakerResource", 'Values':['*' + sm_domain_id]}]
+        filters = [{"Name":"vpc-id","Values":[vpc_id]},{"Name":"tag:ManagedByAmazonSageMakerResource", "Values":["*"+ sm_domain_id]}]
         security_groups = ec2.describe_security_groups(Filters=filters)["SecurityGroups"]
-
-
-        print(f"Delete EFS file system {id}")
-        efs.delete_file_system(FileSystemId=id)
         
+        group_ids = []
         # Remove all ingress and egress rules
         for sg in security_groups:
             if len(sg["IpPermissionsEgress"]) > 0:
@@ -43,24 +40,34 @@ def delete_efs(sm_domain_id, vpc_id):
             if len(sg["IpPermissions"]) > 0:
                 print(f"revoke ingress rule for security group {sg['GroupId']}")
                 ec2.revoke_security_group_ingress(GroupId=sg["GroupId"], IpPermissions=sg["IpPermissions"])
-        
+            group_ids.append(sg["GroupId"])
 
-        # Delete all SageMaker security groups for eth1 (efs)
-        # for sg in security_groups:
-        #     time.sleep(60)
-        #     print(f"delete security group {sg['GroupId']}: {sg['GroupName']}")
-        #     ec2.delete_security_group(GroupId=sg["GroupId"])
 
+        # Remove Security assignment from ENIs
+        default_group_id = [ec2.describe_security_groups(Filters=[{"Name":"group-name","Values":['default']},{"Name":"vpc-id","Values":[vpc_id]}])['SecurityGroups'][0]["GroupId"]]
+        enis = ec2.describe_network_interfaces(Filters=[{"Name":"group-id","Values":group_ids}])['NetworkInterfaces']
+
+        for eni in enis:            
+            eni_id = eni["NetworkInterfaceId"]
+            print(f"Assigning default security group to ENI {eni_id}")
+            ec2.modify_network_interface_attribute(Groups=default_group_id,NetworkInterfaceId=eni_id)
+
+        # Delete all SageMaker security groups (efs)
+        for sg in security_groups:
+            print(f"delete security group {sg['GroupId']}: {sg['GroupName']}")
+            ec2.delete_security_group(GroupId=sg["GroupId"])
+
+        print(f"Delete EFS file system {id}")
+        efs.delete_file_system(FileSystemId=id)            
+    
 
 def lambda_handler(event, context):
     try:
         print(event)
         if event['RequestType'] == 'Delete':
             sm_domain_id = event['ResourceProperties']['DomainId']
-            vpc_id = event['ResourceProperties']['vpcId']
+            delete_efs(sm_domain_id)
 
-            delete_efs(sm_domain_id,vpc_id)
-            cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
         cfnresponse.send(event, context, cfnresponse.SUCCESS, {})    
     except Exception as e:
         print(f"exception: {str(e)}")

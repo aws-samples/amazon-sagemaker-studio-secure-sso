@@ -11,7 +11,7 @@ aws identitystore list-users --identity-store-id '<Identity Store ID>' --filter 
 ```
 - Build and deploy the SAM Application with the following command
 ```sh
-sam build && sam deploy --capabilities CAPABILITY_NAMED_IAM --guided
+sam build && sam deploy --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --guided
 ```
 - Set the parameter **UserProfileName** to the User ID retreived in the first step
 - Go to the AWS SSO Console and create a new [Custom SAML 2.0 Application](https://docs.aws.amazon.com/singlesignon/latest/userguide/samlapps.html)
@@ -21,21 +21,27 @@ sam build && sam deploy --capabilities CAPABILITY_NAMED_IAM --guided
 - Add a new attribute named **domain-id** and set the value to the Key SAM Output **SageMakerStudioDomainId**
 - Add a new attribute named **username** and set the value to **${user:AD_GUID}**
 
+
 ![image info](./img/SSO_App_Config.png)
+
 
 The template also deploys 3 EC2 instances for demonstrating the solution. 
 
-- 1 EC2 Linux in the public subnet acting as Bastion host - IP Available as the **SageMakerBastionHost** Key SAM Output
-- 1 EC2 Windows in a private subnet that is able to access SageMaker - IP Available as the **SageMakerWindowsHost** Key SAM Output 
-- 1 EC2 Windows in a public subnet to demonstrate that SageMaker Studio can't be accessed - IP Available as the **SageMakerWindowsBastionHost** Key SAM Output
+- 1 EC2 Windows in a private subnet that is able to access SageMaker
+- 1 EC2 Linux in the public subnet acting as Bastion host used to establish an SSH tunnel into the EC2 Windows on the private network
+- 1 EC2 Windows in a public subnet to demonstrate that SageMaker Studio can't be accessed from unauthorised subnets - IP Available as the **SageMakerWindowsBastionHost** Key SAM Output
 
-Note that the password for the Windows EC2 instances is provided in the output under the **SageMakerWindowsPassword** key value. To change it, run the following command in a Windows Command prompt at the first login
+Note that the password for the Windows EC2 instances is provided in the output under the **SageMakerWindowsPassword** key value. To change it, run the following command in a Windows Command prompt at the first login.
 
 ```sh
 net user Administrator "NewPassword"
 ```
 
-In order to prevent access to SageMaker Studio for users within the console we recommend to implement the following [Service Control Policy](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html)
+To access the EC2 Windows on the private network, run the command provided as the value of the SAM output Key **TunnelCommand** and establish an RDP connection on localhost and port 3389. Make sure that the public key of the KeyPair specified in the parameter is the directory where the SSH tunnel command is run from.
+
+Once logged in the the EC2 Windows, connect to the AWS SSO portal using the username and password associated with the User ID that was specified as the **UserProfileName** parameter.
+
+In order to prevent access to SageMaker Studio for users within the console we recommend to implement the following [Service Control Policy](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html). Make sure to replace the ***<AuthorizedPrivateSubnet>*** with the source IP CDIR block you want to allow SageMaker Studio access from.
 
 ```sh
 {
