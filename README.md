@@ -1,6 +1,6 @@
 # amazon-sagemaker-studio-secure-sso
 
-### Architecture of the solution
+## Architecture of the solution
 
 This solution provides a way to deploy SageMaker Studio in a private and secure environment. The solution integrates with a [Custom SAML 2.0 Application](https://docs.aws.amazon.com/singlesignon/latest/userguide/samlapps.html) as the mechanism to trigger the authentication to Amazon SageMaker Studio. It requires that the Custom SAML application is configured with the Amazon API Gateway endpoint URL as its ACS (Assertion Consumer Service) and needs mapping attributes containing the AWS SSO User ID as well as the Amazon SageMaker Domain Domain ID. 
 The Amazon API Gateway is configured to trigger an AWS Lambda function that parses the SAML response to extract the Domain ID and User ID and use it to generate the SageMaker Studio Presigned URL and eventually perform redirection to log the user in Amazon SageMaker Studio. The control of the environment that SageMaker Studio users are able to login from is done by an AWS IAM Policy that includes a condition to allow the generation of the predefined URL only from specific(s) IPs, which is attached to the AWS Lambda function.
@@ -19,7 +19,48 @@ aws identitystore list-users --identity-store-id '<Identity Store ID>' --filter 
 ```sh
 sam build && sam deploy --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --stack-name sagemaker-secure-sso --guided
 ```
-* Set the parameter **UserProfileName** to the User ID retreived in the first step
+* Enter the parameters as required, note that some of them have default values and others must be provided. For parameter **UserProfileName**, use the value gathered in the first step
+```sh
+        Stack Name [sagemaker-secure-sso]: 
+        AWS Region [eu-west-1]: 
+        Parameter EnvironmentName [SageMakerSecureSSO]: 
+        Parameter NetworkVpcCidr [10.100.0.0/16]: 
+        Parameter NetworkPrivateSubnetCidr [10.100.10.0/24]: 
+        Parameter NetworkPrivateSubnetSageMakerCidr [10.100.30.0/24]: 
+        Parameter NetworkPublicSubnetCidr [10.100.20.0/24]: 
+        Parameter SageMakerDomainName [SageMakerSecure]: 
+        Parameter UserProfileName []:
+        Parameter KeyPairName []:    
+        Parameter PublicIpCidr []: 
+```
+* Once the SAM application is fully deployed, the should look something like this: 
+```sh
+CloudFormation outputs from deployed stack
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Outputs                                                                                                                                                                                                        
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Key                 SageMakerWindowsBastionHost                                                                                                                                                                
+Description         Public IP Address to access Windows Bastion Host                                                                                                                                           
+Value               34.245.126.112                                                                                                                                                                             
+
+Key                 SageMakerWindowsPassword                                                                                                                                                                   
+Description         Default password to loging to the EC2 Windows instances                                                                                                                                    
+Value               SageMakerSecureSSO10.100.0.0/16                                                                                                                                                            
+
+Key                 SAMLBackEndApi                                                                                                                                                                             
+Description         API Gateway endpoint URL acting as the Application ACS URL                                                                                                                                 
+Value               https://dl06u6zwx1.execute-api.eu-west-1.amazonaws.com/prod/saml                                                                                                                           
+
+Key                 SageMakerStudioDomainId                                                                                                                                                                    
+Description         SageMaker Studio domain created                                                                                                                                                            
+Value               d-qd5xcbgwf2cs                                                                                                                                                                             
+
+Key                 TunnelCommand                                                                                                                                                                              
+Description         Command to initiate the SSH tunnnel in order to access the Windows EC2 on the private subnet over RDP                                                                                      
+Value               ssh -i sagemaker-blog-demo.pem -A -N -L localhost:3389:10.100.10.187:3389 ec2-user@3.250.93.113                                                                                            
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+``` 
+
 * Go to the AWS SSO Console and create a new [Custom SAML 2.0 Application](https://docs.aws.amazon.com/singlesignon/latest/userguide/samlapps.html)
 * Name the Custom SAML 2.0 Application ```SageMaker Secure Demo```
 * Set the Application ACS URL to the URL provided in the **SAMLBackEndApi** Key SAM Output
