@@ -276,7 +276,6 @@ Resources:
         
   SageMakerStudioVpcEndpoint:
     Type: AWS::EC2::VPCEndpoint
-    #DependsOn: SAMLBackEndFunction
     Properties:
       PrivateDnsEnabled: true
       ServiceName: !Sub "aws.sagemaker.${AWS::Region}.studio"
@@ -302,7 +301,6 @@ Resources:
 
   SageMakerRuntimeVpcEndpoint:
     Type: AWS::EC2::VPCEndpoint
-    #DependsOn: SAMLBackEndFunction
     Properties:
       PrivateDnsEnabled: true
       ServiceName: !Sub "com.amazonaws.${AWS::Region}.sagemaker.runtime"
