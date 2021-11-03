@@ -20,7 +20,12 @@ exports.handler = (event, context, callback) => {
             parseString(xmlResponse, { tagNameProcessors: [stripPrefix] },
                 function(err, result) {
                     if (err) {
-                        throw err;
+                        callback(null, {
+                            "statusCode": 400,
+                            "headers": {},
+                            "body": JSON.stringify(err['message']),
+                            "isBase64Encoded": false
+                        })
                     } else {
 
                         var attrs = result.Response.Assertion[0].AttributeStatement[0].Attribute
@@ -28,40 +33,45 @@ exports.handler = (event, context, callback) => {
                         var userId
                         attrs.forEach(attr => {
                             switch (attr.$.Name) {
-                              case 'domain-id':
-                                console.log('DOMAIN')
-                                domainId = attr.AttributeValue[0]._
-                                break;
-                              case 'username':
-                                console.log('USER')
-                                userId = attr.AttributeValue[0]._
-                                break;
-                              default:
-                                console.log(`No Match`);
+                                case 'domain-id':
+                                    console.log('DOMAIN')
+                                    domainId = attr.AttributeValue[0]._
+                                    break;
+                                case 'username':
+                                    console.log('USER')
+                                    userId = attr.AttributeValue[0]._
+                                    break;
+                                default:
+                                    console.log(`No Match`);
                             }
                         });
-                        var sagemaker = new AWS.SageMaker({apiVersion: '2017-07-24'});
+                        var sagemaker = new AWS.SageMaker({ apiVersion: '2017-07-24' });
                         var params = {
-                          DomainId: domainId,
-                          UserProfileName: userId,
-                          ExpiresInSeconds: 5,
+                            DomainId: domainId,
+                            UserProfileName: userId,
+                            ExpiresInSeconds: 5,
                         };
-                        sagemaker.createPresignedDomainUrl(params, function(err, data) {
-                          if (err)
-                          callback(err);
-                          else     console.log(data);           
-                          var url = data.AuthorizedUrl
-                              var response = {
-                                "statusCode": 302,
-                                "headers": {
-                                    "Location":url
-                                },
-                                //"body": JSON.stringify({target:url}),
-                                "isBase64Encoded": false
-                            };
-                          callback(null,response)
-                        });
 
+                        sagemaker.createPresignedDomainUrl(params, function(err, data) {
+                            if (err) {
+                                callback(null, {
+                                    "statusCode": err['statusCode'],
+                                    "headers": {},
+                                    "body": JSON.stringify(err['message']),
+                                    "isBase64Encoded": false
+                                })
+                            } else {
+                                var url = data.AuthorizedUrl
+                                var response = {
+                                    "statusCode": 302,
+                                    "headers": {
+                                        "Location": url
+                                    },
+                                    "isBase64Encoded": false
+                                };
+                                callback(null, response)
+                            }
+                        });
                     }
                 });
         }
