@@ -41,13 +41,13 @@ Mappings:
   RegionMap: 
     eu-west-1: 
       LinuxAMI: "ami-0d1bf5b68307103c2"
-      WinAMI: "ami-0acec5a529be6b35a"     
+      WinAMI: "ami-06938675032090695"     
       datascience: "arn:aws:sagemaker:eu-west-1:470317259841:image/datascience-1.0"
       datawrangler: "arn:aws:sagemaker:eu-west-1:245179582081:image/sagemaker-data-wrangler-1.0"
 
     eu-central-1: 
       LinuxAMI: "ami-058e6df85cfc7760b"
-      WinAMI: "ami-0a1895726297e0e10"      
+      WinAMI: "ami-06e9b42a08895adf6"      
       datascience: "arn:aws:sagemaker:eu-central-1:936697816551:image/datascience-1.0"
       datawrangler: "arn:aws:sagemaker:eu-central-1:024640144536:image/sagemaker-data-wrangler-1.0"
 
