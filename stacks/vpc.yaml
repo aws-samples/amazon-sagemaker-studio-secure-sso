@@ -82,7 +82,7 @@ Resources:
         Value: BastionConnection
       - Key: EnvironmentName
         Value: !Ref EnvironmentName  
-      GroupDescription: !Sub Allow All outbout and inbound from ${NetworkVpc}  
+      GroupDescription: !Sub Allow All outbound and inbound from ${NetworkVpc}  
 
   InboundRuleSecurityGroupBastion22:
     Type: AWS::EC2::SecurityGroupIngress
@@ -160,9 +160,12 @@ Resources:
       VpcId: !Ref VPCSageMaker
       CidrBlock: !Ref NetworkPrivateSubnet
       MapPublicIpOnLaunch: false
+      AvailabilityZone: !Sub "${AWS::Region}a"
       Tags:
+        - Key: Name
+          Value: !Sub private-sn-1a-${EnvironmentName}
         - Key: EnvironmentName
-          Value: !Sub ${EnvironmentName} Private Subnet  
+          Value: !Sub ${EnvironmentName}
 
   PrivateSubnetVPCSageMakerStudio:
     Type: AWS::EC2::Subnet
@@ -170,9 +173,12 @@ Resources:
       VpcId: !Ref VPCSageMaker
       CidrBlock: !Ref NetworkPrivateSubnetSageMaker
       MapPublicIpOnLaunch: false
+      AvailabilityZone: !Sub "${AWS::Region}a"
       Tags:
+        - Key: Name
+          Value: !Sub private-sn-1a-${EnvironmentName}-studio
         - Key: EnvironmentName
-          Value: !Sub ${EnvironmentName} Private Subnet SageMaker            
+          Value: !Sub ${EnvironmentName} 
 
   PublicSubnetVPCSageMaker:
     Type: AWS::EC2::Subnet
@@ -180,9 +186,12 @@ Resources:
       VpcId: !Ref VPCSageMaker
       CidrBlock: !Ref NetworkPublicSubnet
       MapPublicIpOnLaunch: true
+      AvailabilityZone: !Sub "${AWS::Region}a"
       Tags:
+        - Key: Name
+          Value: !Sub public-sn-1a-${EnvironmentName}
         - Key: EnvironmentName
-          Value: !Sub ${EnvironmentName} Public Subnet 
+          Value: !Sub ${EnvironmentName}
 
 ######## NAT Gateways/ IGW Gateway ########
 

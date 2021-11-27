@@ -51,6 +51,12 @@ Mappings:
       datascience: "arn:aws:sagemaker:eu-central-1:936697816551:image/datascience-1.0"
       datawrangler: "arn:aws:sagemaker:eu-central-1:024640144536:image/sagemaker-data-wrangler-1.0"
 
+    us-east-1: 
+      LinuxAMI: "ami-04902260ca3d33422"
+      WinAMI: "ami-0b17e49efb8d755c3"     
+      datascience: "arn:aws:sagemaker:us-east-1:081325390199:image/datascience-1.0"
+      datawrangler: "arn:aws:sagemaker:us-east-1:663277389841:image/sagemaker-data-wrangler-1.0"
+
 Globals:
   Function:
     Timeout: 10
