@@ -33,7 +33,7 @@ CloudFormation outputs from deployed stack
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Outputs                                                                                                                                                                                                        
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Key                 SageMakerWindowsBastionHost                                                                                                                                                                
+Key                 SageMakerWindowsPublicHost                                                                                                                                                                
 Description         Public IP Address to access Windows Bastion Host                                                                                                                                           
 Value               34.245.126.112                                                                                                                                                                             
 
@@ -93,7 +93,7 @@ The solution deploys 3 EC2 instances for demonstrating the solution.
 
 * 1 EC2 Windows in a private subnet that is able to access Amazon SageMaker Studio (think your onpremise secured environment)
 * 1 EC2 Linux in the public subnet acting as Bastion host used to establish an SSH tunnel into the EC2 Windows on the private network
-* 1 EC2 Windows in a public subnet to demonstrate that SageMaker Studio can't be accessed from unauthorised subnets - IP Available as the **SageMakerWindowsBastionHost** Key SAM Output 
+* 1 EC2 Windows in a public subnet to demonstrate that SageMaker Studio can't be accessed from unauthorised subnets - IP Available as the **SageMakerWindowsPublicHost** Key SAM Output 
 
 The username to login to the Windows EC2 instances is **Administrator** and the password is provided in the output under the **SageMakerWindowsPassword** key value. Follow [these instructions](https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/connecting_to_windows_instance.html) to connect to the EC2 Windows instance.
 
@@ -120,7 +120,7 @@ net user Administrator "NewPassword"
 
 1.  On your local desktop/notebook open a new RDP connection (for example using [Microsoft Remote Desktop](https://www.microsoft.com/en-us/p/microsoft-remote-desktop/9wzdncrfj3ps?activetab=pivot:overviewtab)) using localhost as the host, This connection will be tunnelled via the bastion host to the private EC2 Windows instance. Use the user name “Administrator” and password from the stack output **SageMakerWindowsPassword**.
 2.  Open the Firefox web browser from the Desktop 
-3.  Navigate and login to the AWS Single Sign On portal using the credentials associated with the User ID that was specified as the **SSOUserId** parameter.
+3.  Navigate and login to the AWS Single Sign On portal using the credentials associated with the User Name that was specified as the **SSOUserName** parameter.
 4. Click the ```SageMaker Secure Demo``` SSO Application from the AWS Single Sign On portal
 
 **Expected Result**: :white_check_mark: User is logged in to Amazon SageMaker Studio :white_check_mark:
@@ -129,7 +129,7 @@ net user Administrator "NewPassword"
 
 ### Test the access to Amazon SageMaker Studio from unauthorised network
 
-1. Open a new RDP connection on the IP provided in the **SageMakerWindowsBastionHost** SAML output and port 3389, 
+1. Open a new RDP connection on the IP provided in the **SageMakerWindowsPublicHost** SAML output and port 3389, 
 2. Open the Firefox web browser from the Desktop
 3. Navigate and login to the AWS Single Sign On portal using the credentials associated with the User ID that was specified as the **SSOUserId** parameter.
 4. Click the ```SageMaker Secure Demo``` SSO Application from the AWS Single Sign On portal

@@ -145,6 +145,7 @@ Resources:
   SAMLBackEndFunction:
     Type: AWS::Serverless::Function 
     Properties:
+      ReservedConcurrentExecutions: 1
       CodeUri: functions/saml-backend/
       Role: !GetAtt IAMStack.Outputs.SAMLBackEndLambdaRoleArn
       Handler: index.handler
@@ -168,7 +169,8 @@ Resources:
   DeleteSageMakerEFS:
       Type: AWS::Serverless::Function
       Properties:
-        Timeout: 120
+        ReservedConcurrentExecutions: 1
+        Timeout: 60
         Role: !GetAtt IAMStack.Outputs.DeleteEFSLambdaRoleArn
         CodeUri: functions/efs-cleaner/
         Handler: clean-up-efs.lambda_handler
@@ -185,7 +187,7 @@ Outputs:
   SageMakerStudioDomainId:
     Description: "SageMaker Studio domain created"
     Value: !GetAtt SakeMakerStack.Outputs.SageMakerStudioDomainId
-  SageMakerWindowsBastionHost:
+  SageMakerWindowsPublicHost:
     Description: "Public IP Address to access Windows Bastion Host"
     Value: !GetAtt EC2Stack.Outputs.Ec2InstanceWindowsPublicIp   
   SageMakerWindowsPassword:
