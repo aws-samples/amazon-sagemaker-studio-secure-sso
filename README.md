@@ -18,7 +18,7 @@ You can follow these [instructions](./aws-sso-setup.md) to setup AWS Single Sign
 
 ## Deploy the Amazon Sagemaker Studio Secure with AWS Single Sign On solution
 
-Run the following commands to build and deploy the SAM Application. Replace the ```'<Identity Store ID>'``` and ```'<UserName>'``` with values from your AWS SSO configuration.
+1. Run the following commands to build and deploy the SAM Application. Replace the ```'<Identity Store ID>'``` and ```'<UserName>'``` with values from your AWS SSO configuration.
 ```sh
 ssoStoreId='<Identity Store ID>'
 ssoUserName='<UserName>'
@@ -27,7 +27,7 @@ ssoUserId=$(aws identitystore list-users --identity-store-id $ssoStoreId --filte
 EC2keyPair=$(aws ec2 create-key-pair --key-name $ssoUserName-key --query 'KeyMaterial' --output text >> $ssoUserName-key.pem && chmod 400 $ssoUserName-key.pem)
 sam build && sam deploy --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --stack-name sagemaker-secure-sso --guided --parameter-overrides KeyPairName=$ssoUserName-key SSOUserId=$ssoUserId PublicIpCidr=$publicIp
 ```
-* Once the SAM application is fully deployed, the output should look something like this: 
+2. Once the SAM application is fully deployed, the output should look something like this: 
 ```sh
 CloudFormation outputs from deployed stack
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -55,30 +55,31 @@ Value               ssh -i sso-username.pem -A -N -L localhost:3389:10.100.10.18
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ``` 
 
-* Create a new [Custom SAML 2.0 Application](https://docs.aws.amazon.com/singlesignon/latest/userguide/samlapps.html)
+3. Create a new [Custom SAML 2.0 Application](https://docs.aws.amazon.com/singlesignon/latest/userguide/samlapps.html)
   * Open the [AWS SSO console](https://console.aws.amazon.com/singlesignon) on the AWS management account
-  * Choose ***Applications***
-  * Click ***Add a new application***
-  * Choose ***Add a custom SAML 2.0 application***
+  * Choose **Applications**
+  * Click **Add a new application**
+  * Choose **Add a custom SAML 2.0 application**
   * Name the Custom SAML 2.0 Application ```SageMaker Secure Demo```
-  * Leave ***Application start URL*** and ***Relay state*** empty
-  * Click ***If you don't have a metadata file, you can manually type your metadata values.***
-  * Set the ***Application ACS URL*** and ***Application SAML audience*** to the URL provided in the **SAMLBackEndApi** Key SAM Output
-  * Click ***Save Changes***
+  * Leave **Application start URL** and **Relay state** empty
+  * Click **If you don't have a metadata file, you can manually type your metadata values.**
+  * Set the **Application ACS URL** to the URL provided in the **SAMLBackEndApi** Key SAM Output
+  * Set the **Application SAML audience** to the URL provided in the **SAMLAudience** Key SAM Output
+  * Click **Save Changes**
 
 ![image info](./img/sso-app.png)  
 
-* Go under the ***Attribute mappings*** tab
+4. Go under the **Attribute mappings** tab
   * Set the Subject to **email** and format **emailAddress**
   * Add a new attribute named **domain-id** and set the value to the Key SAM Output **SageMakerStudioDomainId**
   * Add a new attribute named **username** and set the value to **${user:AD_GUID}**
 
 ![image info](./img/sso-app-mapping.png)
 
-* Go under the ***Assigned users*** tab
-  * Click ***Assign users***
-  * Select the user used in the ***ssoUserName*** variable of the SAM deployment steps
-  * Click ***Assign users***
+5. Go under the **Assigned users** tab
+  * Click **Assign users**
+  * Select the user used in the **ssoUserName** variable of the SAM deployment steps
+  * Click **Assign users**
  
 ![image info](./img/sso-app-user.png)
 
@@ -90,7 +91,7 @@ The solution deploys 3 EC2 instances for demonstrating the solution.
 * 1 EC2 Linux in the public subnet acting as Bastion host used to establish an SSH tunnel into the EC2 Windows on the private network
 * 1 EC2 Windows in a public subnet to demonstrate that SageMaker Studio can't be accessed from unauthorised subnets - IP Available as the **SageMakerWindowsBastionHost** Key SAM Output 
 
-The username to login to the Windows EC2 instances is ***Administrator*** and the password is provided in the output under the **SageMakerWindowsPassword** key value. Follow [these instructions](https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/connecting_to_windows_instance.html) to connect to the EC2 Windows instance.
+The username to login to the Windows EC2 instances is **Administrator** and the password is provided in the output under the **SageMakerWindowsPassword** key value. Follow [these instructions](https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/connecting_to_windows_instance.html) to connect to the EC2 Windows instance.
 
 To change the password, run the following command in a Windows Command prompt at the first login:
 
@@ -102,10 +103,10 @@ net user Administrator "NewPassword"
 
 1. To access the EC2 Windows on the private network, run the command provided as the value of the SAM output Key **TunnelCommand**, make sure that the public key of the KeyPair specified in the parameter is the directory where the SSH tunnel command is run from. The command creates an [SSH tunnel](https://www.ssh.com/academy/ssh/tunneling/example) from the local computer on localhost:3389 to the EC2 Windows Instance on the private network. 
 
-    ***Full command example***
+    **Full command example**
     * ```ssh -i sso-username.pem -A -N -L localhost:3389:10.100.10.187:3389 ec2-user@3.250.93.113```
 
-    ***Command structure explained***
+    **Command structure explained**
     * ```ssh``` : SSH command
     * ```-i sso-username.pem``` : Pass the private key for authentication: 
     * ```-A```  : Enable agent forwarding for autentication on the remote host
@@ -113,7 +114,7 @@ net user Administrator "NewPassword"
     * ```-L localhost:3389:10.100.10.187:3389 ec2-user@3.250.93.113``` : Performs the forward of the localhost (local machine) on port 3389 to the private EC2 Windows (10.100.10.187) also on port 3389 by goin through the EC2 Linux on the public subnet (3.250.93.113)
 
 
-2.  On your local desktop/notebook open a new RDP connection (for example using Microsoft Remote Desktop) using localhost as the host, This connection will be tunnelled via the bastion host to the private EC2 windows instance. Use the user name “Administrator” and password from the stack output ***SageMakerWindowsPassword***.
+2.  On your local desktop/notebook open a new RDP connection (for example using Microsoft Remote Desktop) using localhost as the host, This connection will be tunnelled via the bastion host to the private EC2 windows instance. Use the user name “Administrator” and password from the stack output **SageMakerWindowsPassword**.
 3.  Open the Firefox web browser from the Desktop 
 4.  Navigate and login to the AWS Single Sign On portal using the credentials associated with the User ID that was specified as the **SSOUserId** parameter.
 5. Click the ```SageMaker Secure Demo``` SSO Application from the AWS Single Sign On portal
@@ -136,7 +137,7 @@ net user Administrator "NewPassword"
 ### Prevent Access to Amazon SageMaker Studio from the AWS Console
 
 In order to centrally prevent access to SageMaker Studio for users within the console we recommend to implement the following [Service Control Policy](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html) and attach it to the account where SageMaker Studio is or can be deployed. 
-Make sure to replace the ***<AuthorizedPrivateSubnet>*** with the source IP CDIR block you want to allow SageMaker Studio access from.
+Make sure to replace the **<AuthorizedPrivateSubnet>** with the source IP CDIR block you want to allow SageMaker Studio access from.
 
 ```json
 {
@@ -179,7 +180,7 @@ aws ec2 delete-key-pair --key-name $ssoUserName-key > /dev/null
 ### How to delete the Custom SAML application
 
 1. Open the [AWS SSO console](https://console.aws.amazon.com/singlesignon).
-2. Choose ***Applications***
-3. Select the radio button next to ***SageMaker Studio Login***
-4. Go to ***Actions*** and select ***Remove***
-5. Type in the ***SageMaker Studio Login*** in the field and cliclk ***Remove application***
+2. Choose **Applications**
+3. Select the radio button next to **SageMaker Studio Login**
+4. Go to **Actions** and select **Remove**
+5. Type in the **SageMaker Studio Login** in the field and cliclk **Remove application**
