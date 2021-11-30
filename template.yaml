@@ -28,7 +28,7 @@ Parameters:
     Type: String
     Default: SageMakerSecure
     AllowedPattern: '[a-zA-Z0-9]+'
-  UserProfileName:
+  SSOUserId:
     Type: String
     AllowedPattern: ^[{]?[0-9a-fA-F]{10}-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}
   KeyPairName: 
@@ -64,6 +64,8 @@ Globals:
 
 Resources:
   
+######## CF Stacks ########
+
   VPCStack:
     Type: AWS::CloudFormation::Stack
     Properties: 
@@ -96,7 +98,7 @@ Resources:
         VPCSageMaker : !GetAtt VPCStack.Outputs.VPCSageMaker
         SageMakerExecutionRoleArn: !GetAtt IAMStack.Outputs.SageMakerExecutionRoleArn
         EnvironmentName : !Ref EnvironmentName
-        UserProfileName : !Ref UserProfileName
+        SSOUserId : !Ref SSOUserId
         DataScienceImage : !FindInMap
           - RegionMap
           - !Ref 'AWS::Region'
@@ -105,117 +107,27 @@ Resources:
         - Key: EnvironmentName
           Value: !Ref EnvironmentName
       TemplateURL: stacks/sagemakerstudio.yaml
-      TimeoutInMinutes: 15
 
-######## EC2 Instances ########
-
-  Ec2InstanceBastion:
-    Type: AWS::EC2::Instance
-    Properties:
-      KeyName: !Ref KeyPairName
-      ImageId: !FindInMap
-        - RegionMap
-        - !Ref AWS::Region
-        - LinuxAMI
-      BlockDeviceMappings:
-      - DeviceName: "/dev/xvda"
-        Ebs:
-          VolumeType: gp2
-          DeleteOnTermination: true
-          VolumeSize: 8
-      InstanceType: t3a.nano
-      SubnetId: !GetAtt VPCStack.Outputs.PublicSubnetVPCSageMaker
-      Tags:
-      - Key: Name
-        Value: BASTION
-      - Key: EnvironmentName
-        Value: !Ref EnvironmentName    
-      SecurityGroupIds:
-      - !GetAtt VPCStack.Outputs.SecurityGroupBastion
-
-  Ec2InstanceWindows:
-    Type: AWS::EC2::Instance
-    Properties:
-      KeyName: !Ref KeyPairName
-      ImageId: !FindInMap
-        - RegionMap
-        - !Ref AWS::Region
-        - WinAMI
-      InstanceType: t3a.small
-      BlockDeviceMappings:
-        - DeviceName: "/dev/sda1"
-          Ebs:
-            VolumeType: gp3
-            DeleteOnTermination: true
-            VolumeSize: 30
-      SubnetId: !GetAtt VPCStack.Outputs.PrivateSubnetVPCSageMaker
-      Tags:
-      - Key: Name
-        Value: Windows
-      - Key: EnvironmentName
-        Value: !Ref EnvironmentName    
-      SecurityGroupIds:
-      - !GetAtt VPCStack.Outputs.SecurityGroupWindows
-      UserData: 
-        Fn::Base64: !Sub |
-            <script>
-            net user Administrator ${EnvironmentName}${NetworkVpcCidr}
-            </script>
-            <powershell>
-                $workdir = "C:\"
-                $source = "https://download.mozilla.org/?product=firefox-latest&os=win64&lang=en-US"
-                $destination = "$workdir\firefox.exe"
-                Invoke-WebRequest $source -OutFile $destination
-                
-                Start-Process -FilePath "$workdir\firefox.exe" -ArgumentList "/S"
-
-                Start-Sleep -s 35
-
-                rm -Force $workdir/firefox*
-                </powershell>
-                <runAsLocalSystem>true</runAsLocalSystem> 
-
-  Ec2InstanceWindowsPublic:
-    Type: AWS::EC2::Instance
-    Properties:
-      KeyName: !Ref KeyPairName
-      ImageId: !FindInMap
-        - RegionMap
-        - !Ref AWS::Region
-        - WinAMI
-      InstanceType: t3a.small
-      SubnetId: !GetAtt VPCStack.Outputs.PublicSubnetVPCSageMaker
-      BlockDeviceMappings:
-        - DeviceName: "/dev/sda1"
-          Ebs:
-            VolumeType: gp3
-            DeleteOnTermination: true
-            VolumeSize: 30
-      Tags:
-      - Key: Name
-        Value: WindowsPublic
-      - Key: EnvironmentName
-        Value: !Ref EnvironmentName    
-      SecurityGroupIds:
-      - !GetAtt VPCStack.Outputs.SecurityGroupBastion
-      UserData: 
-        Fn::Base64: !Sub |
-            <script>
-            net user Administrator ${EnvironmentName}${NetworkVpcCidr}
-            </script>
-            <powershell>
-                $workdir = "C:\"
-                $source = "https://download.mozilla.org/?product=firefox-latest&os=win64&lang=en-US"
-                $destination = "$workdir\firefox.exe"
-                Invoke-WebRequest $source -OutFile $destination
-                
-                Start-Process -FilePath "$workdir\firefox.exe" -ArgumentList "/S"
-
-                Start-Sleep -s 35
-
-                rm -Force $workdir/firefox*
-                </powershell>
-                <runAsLocalSystem>true</runAsLocalSystem>
+  EC2Stack:
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      Parameters:
+        EnvironmentName : !Ref EnvironmentName
+        ImageIdLinux: !FindInMap
+                    - RegionMap
+                    - !Ref AWS::Region
+                    - LinuxAMI
+        ImageIdWindows: !FindInMap
+                    - RegionMap
+                    - !Ref AWS::Region
+                    - WinAMI        
+        KeyPairName: !Ref KeyPairName
+        NetworkVpcCidr: !Ref NetworkVpcCidr
+        PublicSubnetVPCSageMaker: !GetAtt VPCStack.Outputs.PublicSubnetVPCSageMaker
+        PrivateSubnetVPCSageMaker: !GetAtt VPCStack.Outputs.PrivateSubnetVPCSageMaker
+        SecurityGroupWindows: !GetAtt VPCStack.Outputs.SecurityGroupWindows
+        SecurityGroupBastion: !GetAtt VPCStack.Outputs.SecurityGroupBastion
+      TemplateURL: stacks/ec2.yaml  
 
 ######## API Gateway ########
 
@@ -256,7 +168,7 @@ Resources:
   DeleteSageMakerEFS:
       Type: AWS::Serverless::Function
       Properties:
-        Timeout: 900
+        Timeout: 120
         Role: !GetAtt IAMStack.Outputs.DeleteEFSLambdaRoleArn
         CodeUri: functions/efs-cleaner/
         Handler: clean-up-efs.lambda_handler
@@ -267,12 +179,15 @@ Outputs:
   SAMLBackEndApi:
     Description: "API Gateway endpoint URL acting as the Application ACS URL"
     Value: !Sub "https://${SageMakerStudioSSOAPI}.execute-api.${AWS::Region}.amazonaws.com/prod/saml"
+  SAMLAudience:
+    Description: "Application SAML audience"
+    Value: !Sub "https://${SageMakerStudioSSOAPI}.execute-api.${AWS::Region}.amazonaws.com/"    
   SageMakerStudioDomainId:
     Description: "SageMaker Studio domain created"
     Value: !GetAtt SakeMakerStack.Outputs.SageMakerStudioDomainId
   SageMakerWindowsBastionHost:
     Description: "Public IP Address to access Windows Bastion Host"
-    Value: !GetAtt Ec2InstanceWindowsPublic.PublicIp    
+    Value: !GetAtt EC2Stack.Outputs.Ec2InstanceWindowsPublicIp   
   SageMakerWindowsPassword:
     Description: "Default password to loging to the EC2 Windows instances"
     Value: !Sub ${EnvironmentName}${NetworkVpcCidr}
@@ -284,7 +199,7 @@ Outputs:
               - !Ref KeyPairName
               - '.pem '
               - '-A -N -L localhost:3389:'
-              - !GetAtt Ec2InstanceWindows.PrivateIp
+              - !GetAtt EC2Stack.Outputs.Ec2InstanceWindowsPrivateIp
               - ':3389 ec2-user@'
-              - !GetAtt Ec2InstanceBastion.PublicIp
+              - !GetAtt EC2Stack.Outputs.Ec2InstanceBastionPublicIp
 

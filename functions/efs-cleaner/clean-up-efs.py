@@ -62,8 +62,9 @@ def delete_efs(sm_domain_id):
     
 
 def lambda_handler(event, context):
+    print('Invokation')
+    print(event)
     try:
-        print(event)
         if event['RequestType'] == 'Delete':
             sm_domain_id = event['ResourceProperties']['DomainId']
             delete_efs(sm_domain_id)

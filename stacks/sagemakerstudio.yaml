@@ -17,7 +17,7 @@ Parameters:
     Type: String
   EnvironmentName: 
     Type: String
-  UserProfileName: 
+  SSOUserId: 
     Type: String
   DataScienceImage:
     Type: String
@@ -50,7 +50,7 @@ Resources:
       Tags: 
         - Key: EnvironmentName
           Value: !Ref EnvironmentName
-      UserProfileName: !Ref UserProfileName
+      UserProfileName: !Ref SSOUserId
 
   JupyterApp:
     Type: AWS::SageMaker::App
@@ -59,7 +59,7 @@ Resources:
       AppName: default
       AppType: JupyterServer
       DomainId: !GetAtt SageMakerStudioDomain.DomainId
-      UserProfileName: !Ref UserProfileName
+      UserProfileName: !Ref SSOUserId
       Tags: 
         - Key: EnvironmentName
           Value: !Ref EnvironmentName
@@ -74,7 +74,7 @@ Resources:
       ResourceSpec: 
         InstanceType:  ml.t3.medium
         SageMakerImageArn: !Ref DataScienceImage
-      UserProfileName: !Ref UserProfileName
+      UserProfileName: !Ref SSOUserId
       Tags: 
         - Key: EnvironmentName
           Value: !Ref EnvironmentName        

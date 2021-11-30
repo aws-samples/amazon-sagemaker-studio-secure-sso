@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Create EC2 Instances
+
+Parameters: 
+  ImageIdLinux: 
+    Type: String
+  ImageIdWindows: 
+    Type: String    
+  KeyPairName:
+    Type: String
+  PublicSubnetVPCSageMaker:
+    Type: String
+  PrivateSubnetVPCSageMaker:
+    Type: String
+  EnvironmentName:
+    Type: String
+  SecurityGroupBastion:
+    Type: String
+  SecurityGroupWindows:
+    Type: String  
+  NetworkVpcCidr:
+    Type: String
+
+Resources:
+
+  Ec2InstanceBastion:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyPairName
+      ImageId: !Ref ImageIdLinux
+      BlockDeviceMappings:
+      - DeviceName: "/dev/xvda"
+        Ebs:
+          VolumeType: gp2
+          DeleteOnTermination: true
+          VolumeSize: 8
+      InstanceType: t3a.nano
+      SubnetId: !Ref PublicSubnetVPCSageMaker
+      Tags:
+      - Key: Name
+        Value: BASTION
+      - Key: EnvironmentName
+        Value: !Ref EnvironmentName    
+      SecurityGroupIds:
+      - !Ref SecurityGroupBastion
+
+  Ec2InstanceWindows:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyPairName
+      ImageId: !Ref ImageIdWindows
+      InstanceType: t3a.small
+      BlockDeviceMappings:
+        - DeviceName: "/dev/sda1"
+          Ebs:
+            VolumeType: gp3
+            DeleteOnTermination: true
+            VolumeSize: 30
+      SubnetId: !Ref PrivateSubnetVPCSageMaker
+      Tags:
+      - Key: Name
+        Value: Windows
+      - Key: EnvironmentName
+        Value: !Ref EnvironmentName    
+      SecurityGroupIds:
+      - !Ref SecurityGroupWindows
+      UserData: 
+        Fn::Base64: !Sub |
+            <script>
+            net user Administrator ${EnvironmentName}${NetworkVpcCidr}
+            </script>
+            <powershell>
+                $workdir = "C:\"
+                $source = "https://download.mozilla.org/?product=firefox-latest&os=win64&lang=en-US"
+                $destination = "$workdir\firefox.exe"
+                Invoke-WebRequest $source -OutFile $destination
+                
+                Start-Process -FilePath "$workdir\firefox.exe" -ArgumentList "/S"
+
+                Start-Sleep -s 35
+
+                rm -Force $workdir/firefox*
+                </powershell>
+                <runAsLocalSystem>true</runAsLocalSystem> 
+
+  Ec2InstanceWindowsPublic:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyPairName
+      ImageId: !Ref ImageIdWindows
+      InstanceType: t3a.small
+      SubnetId: !Ref PublicSubnetVPCSageMaker
+      BlockDeviceMappings:
+        - DeviceName: "/dev/sda1"
+          Ebs:
+            VolumeType: gp3
+            DeleteOnTermination: true
+            VolumeSize: 30
+      Tags:
+      - Key: Name
+        Value: WindowsPublic
+      - Key: EnvironmentName
+        Value: !Ref EnvironmentName    
+      SecurityGroupIds:
+      - !Ref SecurityGroupBastion
+      UserData: 
+        Fn::Base64: !Sub |
+            <script>
+            net user Administrator ${EnvironmentName}${NetworkVpcCidr}
+            </script>
+            <powershell>
+                $workdir = "C:\"
+                $source = "https://download.mozilla.org/?product=firefox-latest&os=win64&lang=en-US"
+                $destination = "$workdir\firefox.exe"
+                Invoke-WebRequest $source -OutFile $destination
+                
+                Start-Process -FilePath "$workdir\firefox.exe" -ArgumentList "/S"
+
+                Start-Sleep -s 35
+
+                rm -Force $workdir/firefox*
+                </powershell>
+                <runAsLocalSystem>true</runAsLocalSystem>
+
+Outputs:
+  Ec2InstanceWindowsPrivateIp:
+    Value: !GetAtt Ec2InstanceWindows.PrivateIp
+  Ec2InstanceWindowsPublicIp:
+    Value: !GetAtt Ec2InstanceWindowsPublic.PublicIp
+  Ec2InstanceBastionPublicIp:
+    Value: !GetAtt Ec2InstanceBastion.PublicIp
