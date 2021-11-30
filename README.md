@@ -254,7 +254,7 @@ net user Administrator "NewPassword"
 4.  Navigate and login to the AWS Single Sign On portal using the credentials associated with the User ID that was specified as the **SSOUserId** parameter.
 5. Click the ```SageMaker Secure Demo``` SSO Application from the AWS Single Sign On portal
 
-**Expected Result**: :white_check_mark: User is logged in to Amazon SageMaker Studio :white_check_mark:
+**Expected Result**: User is logged in to Amazon SageMaker Studio
 
 ![image info](./img/sso-sm-authorized.gif)
 
@@ -265,7 +265,7 @@ net user Administrator "NewPassword"
 3. Navigate and login to the AWS Single Sign On portal using the credentials associated with the User ID that was specified as the **SSOUserId** parameter.
 4. Click the ```SageMaker Secure Demo``` SSO Application from the AWS Single Sign On portal
 
-**Expected Result**: :x: User receives an unauthorized access message :x:
+**Expected Result**: User receives an unauthorized access message
 
 ![image info](./img/sso-sm-unauthorized.gif)
 
