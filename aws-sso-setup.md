@@ -1,6 +1,3 @@
-# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: MIT-0
-
 # Setup AWS Single Sign-On (SSO)
 
 ## Introduction
@@ -47,3 +44,6 @@ Make a note of the ```Username``` chose in step 1
 3. Note the Identity store ID under the Identity source, format is ```d-xxxxxx```
 
 ![image info](./img/sso-store-id.png)
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: MIT-0

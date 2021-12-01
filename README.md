@@ -1,6 +1,3 @@
-# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: MIT-0
-
 # amazon-sagemaker-studio-secure-sso
 
 ## Architecture of the solution
@@ -191,3 +188,7 @@ aws ec2 delete-key-pair --key-name $ssoUserName-key > /dev/null
 3. Select the radio button next to **SageMaker Studio Login**
 4. Go to **Actions** and select **Remove**
 5. Type in the **SageMaker Studio Login** in the field and cliclk **Remove application**
+
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: MIT-0
