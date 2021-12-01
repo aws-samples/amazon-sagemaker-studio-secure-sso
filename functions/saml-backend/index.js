@@ -1,3 +1,6 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
+
 const xml2js = require('xml2js');
 let decoder = require('saml-encoder-decoder-js'),
     parseString = require("xml2js").parseString,
