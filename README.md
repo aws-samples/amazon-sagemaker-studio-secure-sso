@@ -176,7 +176,7 @@ To delete the solution application that you created, use the follwing commands C
 
 ```bash
 sam delete delete-stack --stack-name sagemaker-secure-sso
-aws ec2 delete-key-pair --key-name $ssoUserName-key > /dev/null
+rm -rf $ssoUserName-key.pem; aws ec2 delete-key-pair --key-name $ssoUserName-key > /dev/null
 ```
 
 :warning: For security reasons and to prevent dataloss, the Amazon EFS mount and the content associated with the Amazon SageMaker Studio Domain deployed in this project will NOT be deleted. As a consequence the VPC and Subnet associated with Sagemaker Studio will also remain. :warning:
