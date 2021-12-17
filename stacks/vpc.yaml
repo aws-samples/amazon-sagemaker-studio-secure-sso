@@ -146,6 +146,7 @@ Resources:
 
   VPCSageMaker:
     Type: "AWS::EC2::VPC"
+    DeletionPolicy: Retain
     Properties:
       CidrBlock: !Ref NetworkVpc
       EnableDnsSupport: true
@@ -169,6 +170,7 @@ Resources:
 
   PrivateSubnetVPCSageMakerStudio:
     Type: AWS::EC2::Subnet
+    DeletionPolicy: Retain
     Properties:
       VpcId: !Ref VPCSageMaker
       CidrBlock: !Ref NetworkPrivateSubnetSageMaker
@@ -194,7 +196,6 @@ Resources:
           Value: !Sub ${EnvironmentName}
 
 ######## NAT Gateways/ IGW Gateway ########
-
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -297,7 +298,6 @@ Resources:
 
   SageMakerAPIVpcEndpoint:
     Type: AWS::EC2::VPCEndpoint
-    #DependsOn: SAMLBackEndFunction
     Properties:
       PrivateDnsEnabled: true
       ServiceName: !Sub "com.amazonaws.${AWS::Region}.sagemaker.api"

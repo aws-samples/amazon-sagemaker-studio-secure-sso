@@ -9,9 +9,9 @@ Parameters:
     Type: String
   SageMakerDomainName:
     Type: String
-  PrivateSubnetVPCSageMakerStudio: 
+  PrivateSubnetVPCSageMakerStudio:
     Type: String
-  SecurityGroupSageMakerStudio: 
+  SecurityGroupSageMakerStudio:
     Type: String
   VPCSageMaker: 
     Type: String
@@ -21,8 +21,6 @@ Parameters:
     Type: String
   DataScienceImage:
     Type: String
-  DeleteSageMakerEFSArn:
-    Type: String  
 
 Resources:
 
@@ -78,13 +76,6 @@ Resources:
       Tags: 
         - Key: EnvironmentName
           Value: !Ref EnvironmentName        
-
-  DeleteEFSSageMaker:
-    Type: Custom::DeleteEFSSageMaker
-    Properties:
-      ServiceToken: !Ref DeleteSageMakerEFSArn
-      DomainId: !GetAtt SageMakerStudioDomain.DomainId
-      vpcId: !Ref VPCSageMaker
 
 Outputs:
   SageMakerStudioDomainId:

@@ -90,65 +90,8 @@ Resources:
         - Key: EnvironmentName
           Value: !Ref EnvironmentName
 
-  DeleteEFSLambdaRole:
-    Type: AWS::IAM::Role
-    Properties:
-      ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy'
-        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          -
-            Effect: Allow
-            Principal:
-              Service:
-                - 'lambda.amazonaws.com'
-            Action:
-              - 'sts:AssumeRole'
-      Policies: 
-        - PolicyName: EC2
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'ec2:RevokeSecurityGroupIngress'
-                  - 'ec2:RevokeSecurityGroupEgress'
-                  - 'ec2:DeleteSecurityGroup'
-                Resource: 
-                  - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*'
-        - PolicyName: EFSCapabilities
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'elasticfilesystem:DescribeMountTargets'
-                  - 'elasticfilesystem:DescribeFileSystems'
-                  - 'elasticfilesystem:DeleteMountTarget'
-                  - 'elasticfilesystem:DeleteFileSystem'
-                Resource: 
-                  - !Sub 'arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:access-point/*'
-                  - !Sub 'arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/*'                  
-        - PolicyName: StarResourceLevel
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'ec2:DescribeSecurityGroups'
-                  - 'ec2:DescribeNetworkInterfaces'
-                  - 'ec2:ModifyNetworkInterfaceAttribute'                             
-                Resource: '*'                  
-      Tags:
-        - Key: EnvironmentName
-          Value: !Ref EnvironmentName
-
 Outputs:
   SageMakerExecutionRoleArn:
     Value: !GetAtt SageMakerExecutionRole.Arn
   SAMLBackEndLambdaRoleArn:
     Value: !GetAtt SAMLBackEndLambdaRole.Arn    
-  DeleteEFSLambdaRoleArn:
-    Value: !GetAtt DeleteEFSLambdaRole.Arn

@@ -86,13 +86,11 @@ Resources:
         NetworkPrivateSubnet: !Ref NetworkPrivateSubnetCidr
       TemplateURL: stacks/iam.yaml
 
-  SakeMakerStack:
+  SageMakerStack:
     Type: AWS::CloudFormation::Stack
-    DependsOn: VPCStack
     Properties: 
       Parameters: 
         SageMakerDomainName : !Ref SageMakerDomainName
-        DeleteSageMakerEFSArn: !GetAtt DeleteSageMakerEFS.Arn
         PrivateSubnetVPCSageMakerStudio : !GetAtt VPCStack.Outputs.PrivateSubnetVPCSageMakerStudio
         SecurityGroupSageMakerStudio : !GetAtt VPCStack.Outputs.SecurityGroupSageMakerStudio
         VPCSageMaker : !GetAtt VPCStack.Outputs.VPCSageMaker
@@ -166,15 +164,6 @@ Resources:
           - !GetAtt VPCStack.Outputs.SecurityGroupAPIGateway
         SubnetIds:
           - !GetAtt VPCStack.Outputs.PrivateSubnetVPCSageMaker
-  DeleteSageMakerEFS:
-      Type: AWS::Serverless::Function
-      Properties:
-        ReservedConcurrentExecutions: 1
-        Timeout: 60
-        Role: !GetAtt IAMStack.Outputs.DeleteEFSLambdaRoleArn
-        CodeUri: functions/efs-cleaner/
-        Handler: clean-up-efs.lambda_handler
-        Runtime: python3.8
 
 Outputs:
 
@@ -186,7 +175,7 @@ Outputs:
     Value: !Sub "https://${SageMakerStudioSSOAPI}.execute-api.${AWS::Region}.amazonaws.com/"    
   SageMakerStudioDomainId:
     Description: "SageMaker Studio domain created"
-    Value: !GetAtt SakeMakerStack.Outputs.SageMakerStudioDomainId
+    Value: !GetAtt SageMakerStack.Outputs.SageMakerStudioDomainId
   SageMakerWindowsPublicHost:
     Description: "Public IP Address to access Windows Bastion Host"
     Value: !GetAtt EC2Stack.Outputs.Ec2InstanceWindowsPublicIp   
