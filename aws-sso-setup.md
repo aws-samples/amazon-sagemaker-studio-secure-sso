@@ -1,7 +1,9 @@
 # Setup AWS Single Sign-On (SSO)
 
 ## Introduction
-AWS Single Sign-On 
+
+AWS Single Sign-On is a cloud-based single sign-on (SSO) service that makes it easy to centrally manage SSO access to all of your AWS accounts and cloud applications.
+AWS SSO helps you manage access and permissions to commonly used third-party software as a service (SaaS) applications as well as custom applications that support Security Assertion Markup Language (SAML) 2.0.
 
 ## Enable AWS SSO
 
@@ -12,8 +14,9 @@ AWS Single Sign-On
 
 ## Choose your identity source
 
-By default, AWS SSO offers its identity source which meansn users's username and password are directly managed within AWS SSO however you do have a choice to use an alternate identity source such [Active Directory](https://docs.aws.amazon.com/singlesignon/latest/userguide/manage-your-identity-source-ad.html) or other [external identity provider](https://docs.aws.amazon.com/singlesignon/latest/userguide/manage-your-identity-source-idp.html)
-For the purpose of this excersise we recommend to select the default AWS SSO option to manage identities
+By default, AWS SSO offers its identity source which means users's username and password are directly managed within AWS SSO, however you do have a choice to use an alternate identity source such [Active Directory](https://docs.aws.amazon.com/singlesignon/latest/userguide/manage-your-identity-source-ad.html) or other [external identity provider](https://docs.aws.amazon.com/singlesignon/latest/userguide/manage-your-identity-source-idp.html).
+
+For the purpose of this excersise we recommend to select the default AWS SSO option to manage identities.
 
 ## Add AWS SSO users
 
@@ -35,7 +38,7 @@ Users and groups that you create in your AWS SSO store are available in AWS SSO 
 4. Choose Next: Groups.
 5. Select one or more groups that you want the user to be a member of. Then choose Add user.
 
-Make a note of the ```Username``` chose in step 1
+:warning:  Make a note of the ```Username``` chose in step 1, you will need it during the deployment of the solution.
 
 ## Retreive Identity store ID
 
