@@ -2,6 +2,8 @@
     "name": "SAMLBackEnd",
     "version": "1.0.0",
     "dependencies": {
+        "lodash": ">=4.17.21",
+        "xmldom": ">=0.5.0",
         "express": "^4.17.1",
         "saml-encoder-decoder-js": "^1.0.1",
         "saml2js": "^0.1.2",

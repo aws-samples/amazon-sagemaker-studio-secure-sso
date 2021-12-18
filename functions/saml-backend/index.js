@@ -29,6 +29,7 @@ exports.handler = (event, context, callback) => {
                             "body": JSON.stringify(err['message']),
                             "isBase64Encoded": false
                         })
+                        console.error(err['message'])
                     } else {
 
                         var attrs = result.Response.Assertion[0].AttributeStatement[0].Attribute
@@ -37,11 +38,11 @@ exports.handler = (event, context, callback) => {
                         attrs.forEach(attr => {
                             switch (attr.$.Name) {
                                 case 'domain-id':
-                                    console.log('DOMAIN')
+                                    console.log('DOMAIN: ' + attr.AttributeValue[0]._)
                                     domainId = attr.AttributeValue[0]._
                                     break;
                                 case 'username':
-                                    console.log('USER')
+                                    console.log('USER: ' + attr.AttributeValue[0]._)
                                     userId = attr.AttributeValue[0]._
                                     break;
                                 default:
@@ -63,6 +64,7 @@ exports.handler = (event, context, callback) => {
                                     "body": JSON.stringify(err['message']),
                                     "isBase64Encoded": false
                                 })
+                                console.error(err['message'])
                             } else {
                                 var url = data.AuthorizedUrl
                                 var response = {
