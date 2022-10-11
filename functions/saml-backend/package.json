@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "dependencies": {
         "lodash": ">=4.17.21",
-        "@xmldom/xmldom": ">=0.7.0",
+        "@xmldom/xmldom": ">=0.8.3",
         "express": "^4.17.1",
         "saml-encoder-decoder-js": "^1.0.1",
         "saml2js": "^0.1.2",
