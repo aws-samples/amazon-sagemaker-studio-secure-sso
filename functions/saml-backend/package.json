@@ -4,7 +4,7 @@
     "dependencies": {
         "lodash": ">=4.17.21",
         "@xmldom/xmldom": ">=0.7.0",
-        "express": "^4.17.1",
+        "express": "^4.17.3",
         "saml-encoder-decoder-js": "^1.0.1",
         "saml2js": "^0.1.2",
         "xml2js": "^0.4.23"
