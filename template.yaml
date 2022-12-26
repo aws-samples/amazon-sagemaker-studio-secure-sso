@@ -30,7 +30,7 @@ Parameters:
     AllowedPattern: '[a-zA-Z0-9]+'
   SSOUserId:
     Type: String
-    AllowedPattern: ^[{]?[0-9a-fA-F]{10}-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}
+    AllowedPattern: ^[{]?-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}
   KeyPairName: 
     Type: String
     AllowedPattern: '[a-zA-Z0-9\-\_]+'
