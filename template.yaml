@@ -30,7 +30,7 @@ Parameters:
     AllowedPattern: '[a-zA-Z0-9]+'
   SSOUserId:
     Type: String
-    AllowedPattern: ^[{]?[0-9a-fA-F]{10}-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}
+    AllowedPattern: ^[{]?-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}
   KeyPairName: 
     Type: String
     AllowedPattern: '[a-zA-Z0-9\-\_]+'
@@ -41,19 +41,19 @@ Mappings:
   RegionMap: 
     eu-west-1: 
       LinuxAMI: "ami-0d1bf5b68307103c2"
-      WinAMI: "ami-06938675032090695"     
+      WinAMI: "ami-07fc612d98a90981b"     
       datascience: "arn:aws:sagemaker:eu-west-1:470317259841:image/datascience-1.0"
       datawrangler: "arn:aws:sagemaker:eu-west-1:245179582081:image/sagemaker-data-wrangler-1.0"
 
     eu-central-1: 
       LinuxAMI: "ami-058e6df85cfc7760b"
-      WinAMI: "ami-06e9b42a08895adf6"      
+      WinAMI: "ami-05a60358d5cda31c5"      
       datascience: "arn:aws:sagemaker:eu-central-1:936697816551:image/datascience-1.0"
       datawrangler: "arn:aws:sagemaker:eu-central-1:024640144536:image/sagemaker-data-wrangler-1.0"
 
     us-east-1: 
       LinuxAMI: "ami-04902260ca3d33422"
-      WinAMI: "ami-0b17e49efb8d755c3"     
+      WinAMI: "ami-064d05b4fe8515623"     
       datascience: "arn:aws:sagemaker:us-east-1:081325390199:image/datascience-1.0"
       datawrangler: "arn:aws:sagemaker:us-east-1:663277389841:image/sagemaker-data-wrangler-1.0"
 
