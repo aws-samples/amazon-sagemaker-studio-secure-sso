@@ -7,6 +7,6 @@
         "express": "^4.17.3",
         "saml-encoder-decoder-js": "^1.0.1",
         "saml2js": "^0.1.2",
-        "xml2js": "^0.4.23"
+        "xml2js": "^0.5.0"
     }
 }
